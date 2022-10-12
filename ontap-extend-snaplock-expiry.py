@@ -35,6 +35,10 @@ for system in config["systems"]:
     except requests.exceptions.SSLError:
         print("Certificate verification failed for %s. Use -k or add appropriate CA to system configuration" % system["ip"])
         continue
+    except requests.exceptions.ConnectionError as e:
+        print("Unable to connect to %s" % system["ip"])
+        print(e)
+        continue
 
     if r.status_code != 200:
         exit("Failed to connect to %s" % system["ip"])
