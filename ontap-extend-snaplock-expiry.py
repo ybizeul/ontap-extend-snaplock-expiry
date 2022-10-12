@@ -4,9 +4,20 @@ import json
 import requests
 import datetime
 import re
+import argparse
 
 import urllib3
 urllib3.disable_warnings()
+
+simulate=False
+
+parser = argparse.ArgumentParser(description='Update Snaplock snapshot expiry time according to snapmirror labels')
+parser.add_argument('--simulate', '-s', dest="simulate", action="store_true", default=False, help="Simulate, don't apply expiry date change and report on what would be done")
+
+args = parser.parse_args()
+
+if args.simulate:
+    print("Running in simulate mode")
 
 with open('config.json','r') as configfile:
     config = json.load(configfile)
@@ -67,8 +78,13 @@ for system in config["systems"]:
                 # Extend Snaplock expiry time on snapshot
                 data={'vserver':snapshot_svm,'volume':snapshot_volume,'snapshot':snapshot_name,'expiry-time':snaplock_expiry_time}
                 try:
-                    u = requests.post('https://%s/api/private/cli/snapshot/modify-snaplock-expiry-time' % (system["ip"]), json=data, auth=auth, verify=verify_ssl)
+                    if simulate==False:
+                        u = requests.post('https://%s/api/private/cli/snapshot/modify-snaplock-expiry-time' % (system["ip"]), json=data, auth=auth, verify=verify_ssl)
+                    else:
+                        print("Would update expiry-time from %s to %s on snapshot %s for volume %s on svm %s on %s" % (snapshot_create_time,snaplock_expiry_time,snapshot_name,snapshot_volume,snapshot_svm,system["ip"]))
+
                 except Error as e:
                     print(e)
                     print("Failed to update expiry-time %s on snapshot %s for volume %s on svm %s on %s" % (snaplock_expiry_time,snapshot_name,snapshot_volume,snapshot_svm,system["ip"]))
-                print("Updated expiry-time from %s to %s on snapshot %s for volume %s on svm %s on %s" % (snapshot_create_time,snaplock_expiry_time,snapshot_name,snapshot_volume,snapshot_svm,system["ip"]))
+                else:
+                    print("Updated expiry-time from %s to %s on snapshot %s for volume %s on svm %s on %s" % (snapshot_create_time,snaplock_expiry_time,snapshot_name,snapshot_volume,snapshot_svm,system["ip"]))
