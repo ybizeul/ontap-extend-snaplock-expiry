@@ -29,6 +29,11 @@ Example configuration file :
             "ip":"cluster1.lab.tynsoe.org",
             "username":"admin",
             "password":"Netapp01"
+        },
+        {
+            "ip":"cluster2.lab.tynsoe.org",
+            "username":"admin",
+            "password":"Netapp01"
         }
     ],
     "labels-policies":{
