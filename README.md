@@ -9,15 +9,17 @@ This can cause a problem with mixed retention times, like keeping 30 daily snaps
 Depending on the change rate, this can cause a significant storage consumption.
 
 ```
-usage: ontap-extend-snaplock-expiry.py [-h] [--version] [--simulate] [-k]
+usage: ontap-extend-snaplock-expiry.py [-h] [--version] [--simulate] [--max-retention MAX_RETENTION] [-k]
 
 Update Snaplock snapshot expiry time according to snapmirror labels
 
 optional arguments:
-  -h, --help      show this help message and exit
-  --version, -v   show program's version number and exit
-  --simulate, -s  Simulate, don't apply expiry date change and report on what would be done
-  -k              Ignore SSL errors
+  -h, --help            show this help message and exit
+  --version, -v         show program's version number and exit
+  --simulate, -s        Simulate, don't apply expiry date change and report on what would be done
+  --max-retention MAX_RETENTION, -m MAX_RETENTION
+                        Maximum retention time that can be set in seconds. Defaults to 15768000 (6 months)
+  -k                    Ignore SSL errors
 ```
 
 ## Configuring snaplock extension time
@@ -47,7 +49,6 @@ Example configuration file :
 ```
 
 Set `insecure-ssl` to true if using self signed certificate for HTTPS.
-
 
 Configuration of the amount of time to lock a given snapshot is configured in `labels-policies`.
 

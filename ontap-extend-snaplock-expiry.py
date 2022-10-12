@@ -14,6 +14,7 @@ version = 0.9
 parser = argparse.ArgumentParser(description='Update Snaplock snapshot expiry time according to snapmirror labels')
 parser.add_argument('--version', '-v', action='version', version='%(prog)s ' + str(version))
 parser.add_argument('--simulate', '-s', dest="simulate", action="store_true", default=False, help="Simulate, don't apply expiry date change and report on what would be done")
+parser.add_argument('--max-expiry', '-m', dest="max_expiry", default=15768000, type=int, help="Maximum expiration time that can be set in seconds. Defaults to 15768000 (6 months)")
 parser.add_argument('-k', dest="ignore_ssl", action="store_true", default=False, help="Ignore SSL errors")
 
 args = parser.parse_args()
@@ -92,7 +93,10 @@ for system in config["systems"]:
                 snapshot_create_time_obj = datetime.datetime.strptime(standard_snapshot_create_time, '%Y-%m-%dT%H:%M:%S%z')
 
                 # Add the desired amount of seconds to create_time to determine snaplock_expiry_time
-                snaplock_expiry_time_obj = snapshot_create_time_obj + datetime.timedelta(seconds=config['labels-policies'][snapshot_snapmirror_label])
+                seconds=config['labels-policies'][snapshot_snapmirror_label]
+                if seconds > args.max_expiry:
+                    continue
+                snaplock_expiry_time_obj = snapshot_create_time_obj + datetime.timedelta(seconds=seconds)
 
                 # Convert date back to ONTAP format
                 standard_snaplock_expiry_time=datetime.datetime.strftime(snaplock_expiry_time_obj,'%Y-%m-%dT%H:%M:%S%z')
