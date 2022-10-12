@@ -54,7 +54,7 @@ for system in config["systems"]:
             snapshot_snapmirror_label = 'snapmirror_label' in snapshot_details and snapshot_details['snapmirror_label'] or None
             snapshot_snaplock_expiry_time = 'snaplock_expiry_time' in snapshot_details and snapshot_details['snaplock_expiry_time'] or None
             
-            if snapshot_snapmirror_label in snapmirror_labels :#and snapshot_snaplock_expiry_time:
+            if snapshot_snapmirror_label in snapmirror_labels and snapshot_snaplock_expiry_time:
                 # We have a policy for this label
 
                 # Convert create time to standard object
@@ -66,9 +66,9 @@ for system in config["systems"]:
 
                 # Extend Snaplock expiry time on snapshot
                 data={'vserver':snapshot_svm,'volume':snapshot_volume,'snapshot':snapshot_name,'expiry-time':snaplock_expiry_time}
-                print(json.dumps(data))
-                u = requests.post('https://%s/api/private/cli/snapshot/modify-snaplock-expiry-time' % (system["ip"]), json=json.dumps(data), auth=auth, verify=verify_ssl)
-                if u.status_code != 200:
-                    print(u.text)
-                    exit("Failed to update expiry-time %s on snapshot %s for volume %s on svm %s on %s" % (snaplock_expiry_time,snapshot_name,snapshot_volume,snapshot_svm,system["ip"]))
+                try:
+                    u = requests.post('https://%s/api/private/cli/snapshot/modify-snaplock-expiry-time' % (system["ip"]), json=data, auth=auth, verify=verify_ssl)
+                except Error as e:
+                    print(e)
+                    print("Failed to update expiry-time %s on snapshot %s for volume %s on svm %s on %s" % (snaplock_expiry_time,snapshot_name,snapshot_volume,snapshot_svm,system["ip"]))
                 print("Updated expiry-time from %s to %s on snapshot %s for volume %s on svm %s on %s" % (snapshot_create_time,snaplock_expiry_time,snapshot_name,snapshot_volume,snapshot_svm,system["ip"]))
