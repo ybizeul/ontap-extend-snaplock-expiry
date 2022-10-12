@@ -7,30 +7,30 @@ import re
 import argparse
 
 import urllib3
-urllib3.disable_warnings()
 
-simulate=False
+version = 0.9
 
 parser = argparse.ArgumentParser(description='Update Snaplock snapshot expiry time according to snapmirror labels')
+parser.add_argument('--version', '-v', action='version', version='%(prog)s ' + str(version))
 parser.add_argument('--simulate', '-s', dest="simulate", action="store_true", default=False, help="Simulate, don't apply expiry date change and report on what would be done")
+parser.add_argument('-k', dest="ignore_ssl", action="store_true", default=False, help="Ignore SSL errors")
 
 args = parser.parse_args()
 
 if args.simulate:
     print("Running in simulate mode")
 
+if args.ignore_ssl:
+    urllib3.disable_warnings()
+
 with open('config.json','r') as configfile:
     config = json.load(configfile)
-
-verify_ssl=True
-if "insecure-ssl" in config and config["insecure-ssl"] is True:
-    verify_ssl=False
 
 snapmirror_labels = config['labels-policies'].keys()
 
 for system in config["systems"]:
     auth = (system["username"],system["password"])
-    r = requests.get('https://%s/api/storage/volumes' % system["ip"], auth=auth, verify=verify_ssl)
+    r = requests.get('https://%s/api/storage/volumes' % system["ip"], auth=auth, verify=not args.ignore_ssl)
 
     if r.status_code != 200:
         exit("Failed to connect to %s" % system["ip"])
@@ -41,7 +41,7 @@ for system in config["systems"]:
         volume_uuid = volume['uuid']
 
         # Get all snapshots
-        s = requests.get('https://%s/api/storage/volumes/%s/snapshots' % (system["ip"],volume_uuid), auth=auth, verify=verify_ssl)
+        s = requests.get('https://%s/api/storage/volumes/%s/snapshots' % (system["ip"],volume_uuid), auth=auth, verify=not args.ignore_ssl)
         if s.status_code != 200:
             exit("Failed to get snapshots for volume %s on %s" % (volume_uuid,system["ip"]))
         
@@ -51,7 +51,7 @@ for system in config["systems"]:
             snapshot_uuid = snapshot['uuid']
 
             # Get snapshot details
-            t = requests.get('https://%s/api/storage/volumes/%s/snapshots/%s' % (system["ip"],volume_uuid,snapshot_uuid), auth=auth, verify=verify_ssl)
+            t = requests.get('https://%s/api/storage/volumes/%s/snapshots/%s' % (system["ip"],volume_uuid,snapshot_uuid), auth=auth, verify=not args.ignore_ssl)
             
             if t.status_code != 200:
                 exit("Failed to get snapshot %s for volume %s on %s" % (snapshot_uuid,volume_uuid,system["ip"]))
@@ -79,7 +79,7 @@ for system in config["systems"]:
                 data={'vserver':snapshot_svm,'volume':snapshot_volume,'snapshot':snapshot_name,'expiry-time':snaplock_expiry_time}
                 try:
                     if args.simulate==False:
-                        u = requests.post('https://%s/api/private/cli/snapshot/modify-snaplock-expiry-time' % (system["ip"]), json=data, auth=auth, verify=verify_ssl)
+                        u = requests.post('https://%s/api/private/cli/snapshot/modify-snaplock-expiry-time' % (system["ip"]), json=data, auth=auth, verify=not args.ignore_ssl)
 
                 except Error as e:
                     print(e)
