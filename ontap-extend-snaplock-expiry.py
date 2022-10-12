@@ -30,7 +30,11 @@ snapmirror_labels = config['labels-policies'].keys()
 
 for system in config["systems"]:
     auth = (system["username"],system["password"])
-    r = requests.get('https://%s/api/storage/volumes' % system["ip"], auth=auth, verify=not args.ignore_ssl)
+    try:
+        r = requests.get('https://%s/api/storage/volumes' % system["ip"], auth=auth, verify=not args.ignore_ssl)
+    except requests.exceptions.SSLError:
+        print("Certificate verification failed for %s. Use -k or add appropriate CA to system configuration" % system["ip"])
+        continue
 
     if r.status_code != 200:
         exit("Failed to connect to %s" % system["ip"])
