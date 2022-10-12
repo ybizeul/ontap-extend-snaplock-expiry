@@ -1,0 +1,15 @@
+{
+    "systems":[
+        {
+            "ip":"cluster1.lab.tynsoe.org",
+            "username":"admin",
+            "password":"Netapp01"
+        }
+    ],
+    "labels-policies":{
+        "slc_5min": 3600,
+        "slc_1min": 300,
+        "daily": 86400
+    },
+    "insecure-ssl": true
+}
