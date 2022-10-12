@@ -1,8 +1,14 @@
-## Abstract
+## Introduction
 
-`ontap-extend-snaplock-expiry` is used to extend Snaplock expiry time on a category of snapshots.
+`ontap-extend-snaplock-expiry` is used to extend Snaplock expiry time on a category of snapshots, based on their snapmirror labels.
 
-## Configuration
+When using Snapvault to backup data to a Snaplock aggregate, there is no option to make so the snapshots are individually snaplocked to the same date as the snapshot expiration time. As an effect, whatever the default Snaplock time for the volume is will be applied to incoming snapshots.
+
+This can cause a problem with mixed retention times, like keeping 30 daily snapshots, and 14 weekly snapshots : we should set the volume default snaplock expiration to 14 weeks, but in this case, all the daily snapshots within the 14 weeks retention for the weeklies will be retained and eat up additional space.
+
+Depending on the change rate, this can cause a significant storage consumption.
+
+## Configuring snaplock extension time
 
 Example configuration file :
 
@@ -24,6 +30,12 @@ Example configuration file :
 }
 ```
 
-`labels-policies` : Dictionary describing the amount of seconds to extend the snaplock expiry time relative to the snapshot creation time.
+Set `insecure-ssl` to true if using self signed certificate for HTTPS.
 
-`insecure-ssl` : Set to true if using self signed certificate.
+
+Configuration of the amount of time to lock a given snapshot is configured in `labels-policies`.
+
+This is a key/value dictionary with the snapmirror label as a key, and an expiration time for the corresponding snapshots in seconds.
+
+In the example above, any snapshots with the `slc_5min` snapmirror label will have their snaplock expiration time set to `create_time + 3600s`
+
