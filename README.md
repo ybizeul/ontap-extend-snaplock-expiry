@@ -8,6 +8,16 @@ This can cause a problem with mixed retention times, like keeping 30 daily snaps
 
 Depending on the change rate, this can cause a significant storage consumption.
 
+```
+usage: ontap-extend-snaplock-expiry.py [-h] [--simulate]
+
+Update Snaplock snapshot expiry time according to snapmirror labels
+
+optional arguments:
+  -h, --help      show this help message and exit
+  --simulate, -s  Simulate, don't apply expiry date change and report on what would be done
+```
+
 ## Configuring snaplock extension time
 
 Example configuration file :
@@ -39,3 +49,4 @@ This is a key/value dictionary with the snapmirror label as a key, and an expira
 
 In the example above, any snapshots with the `slc_5min` snapmirror label will have their snaplock expiration time set to `create_time + 3600s`
 
+It is recommended to do a first run with `-s` argument to get an idea of what would be performed beforehand.
