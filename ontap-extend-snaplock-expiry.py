@@ -103,9 +103,10 @@ for system in config["systems"]:
                 try:
                     if args.simulate==False:
                         u = requests.post('https://%s/api/private/cli/snapshot/modify-snaplock-expiry-time' % (system["ip"]), json=data, auth=auth, verify=not args.ignore_ssl)
-
-                except Error as e:
-                    print(e)
+                        if u.status_code != 200:
+                            print(u.json()['error']['message'])
+                            raise Exception()
+                except Exception as e:
                     print("Failed to update expiry-time %s on snapshot %s for volume %s on svm %s on %s" % (snaplock_expiry_time,snapshot_name,snapshot_volume,snapshot_svm,system["ip"]))
                 else:
                     if args.simulate == False:
