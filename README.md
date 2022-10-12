@@ -42,8 +42,7 @@ Example configuration file :
         "slc_5min": 3600,
         "slc_1min": 300,
         "daily": 86400
-    },
-    "insecure-ssl": true
+    }
 }
 ```
 
