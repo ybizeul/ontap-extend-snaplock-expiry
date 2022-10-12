@@ -25,4 +25,5 @@ Example configuration file :
 ```
 
 `labels-policies` : Dictionary describing the amount of seconds to extend the snaplock expiry time relative to the snapshot creation time.
+
 `insecure-ssl` : Set to true if using self signed certificate.
