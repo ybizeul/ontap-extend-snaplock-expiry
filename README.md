@@ -9,16 +9,18 @@ This can cause a problem with mixed retention times, like keeping 30 daily snaps
 Depending on the change rate, this can cause a significant storage consumption.
 
 ```
-usage: ontap-extend-snaplock-expiry.py [-h] [--version] [--simulate] [--max-retention MAX_RETENTION] [-k]
+usage: ontap-extend-snaplock-expiry.py [-h] [--version] [--config CONFIG] [--simulate] [--check] [--max-expiry MAX_EXPIRY] [-k]
 
 Update Snaplock snapshot expiry time according to snapmirror labels
 
 optional arguments:
   -h, --help            show this help message and exit
   --version, -v         show program's version number and exit
+  --config CONFIG       Path to configuration file. Defaults to ./config.json
   --simulate, -s        Simulate, don't apply expiry date change and report on what would be done
-  --max-retention MAX_RETENTION, -m MAX_RETENTION
-                        Maximum retention time that can be set in seconds. Defaults to 15768000 (6 months)
+  --check, -c           Check current Snaplock expiry and return compliant/non-compliant/error for each system
+  --max-expiry MAX_EXPIRY, -m MAX_EXPIRY
+                        Maximum expiration time that can be set in seconds. Defaults to 15768000 (6 months)
   -k                    Ignore SSL errors
 ```
 
@@ -57,3 +59,20 @@ This is a key/value dictionary with the snapmirror label as a key, and an expira
 In the example above, any snapshots with the `slc_5min` snapmirror label will have their snaplock expiration time set to `create_time + 3600s`
 
 It is recommended to do a first run with `-s` argument to get an idea of what would be performed beforehand.
+
+## Integration with SNMP
+
+Add the following line in `/etc/snmp/snmpd.conf` to query compliance status through SNMP:
+
+```
+extend ontap-snaplock /opt/ontap-extend-snaplock-expiry.py --config /etc/ontap-snaplock.json -k -c
+```
+
+Sample output :
+
+```
+❯ snmpwalk -c public 192.168.64.12 NET-SNMP-EXTEND-MIB::nsExtendOutput2Table
+NET-SNMP-EXTEND-MIB::nsExtendOutLine."ontap-snaplock".1 = STRING: cluster1.lab.tynsoe.org = compliant
+NET-SNMP-EXTEND-MIB::nsExtendOutLine."ontap-snaplock".2 = STRING: cluster2.lab.tynsoe.org = error
+NET-SNMP-EXTEND-MIB::nsExtendOutLine."ontap-snaplock".3 = STRING: cluster3.lab.tynsoe.org = non-compliant
+```
