@@ -154,4 +154,5 @@ for system in config["systems"]:
                         print("Updated expiry-time from %s to %s on snapshot %s for volume %s on svm %s on %s" % (snapshot_create_time,snaplock_expiry_time,snapshot_name,snapshot_volume,snapshot_svm,system["ip"]))
                     else:
                         print("Would update expiry-time from %s to %s on snapshot %s for volume %s on svm %s on %s" % (snapshot_create_time,snaplock_expiry_time,snapshot_name,snapshot_volume,snapshot_svm,system["ip"]))
+    if args.check:
         print('%s = %s' % (system["ip"],compliance))
