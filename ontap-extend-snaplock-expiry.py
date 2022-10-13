@@ -1,4 +1,4 @@
-#!python3
+#! /usr/bin/env python3
 
 import json
 import requests
@@ -13,6 +13,7 @@ version = 0.9
 # Arguments Parsing
 parser = argparse.ArgumentParser(description='Update Snaplock snapshot expiry time according to snapmirror labels')
 parser.add_argument('--version', '-v', action='version', version='%(prog)s ' + str(version))
+parser.add_argument('--config', dest="config", action='store', default="config.json", help="Path to configuration file. Defaults to ./config.json")
 parser.add_argument('--simulate', '-s', dest="simulate", action="store_true", default=False, help="Simulate, don't apply expiry date change and report on what would be done")
 parser.add_argument('--check', '-c', dest="check", action="store_true", default=False, help="Check current Snaplock expiry and return compliant/non-compliant/error for each system")
 parser.add_argument('--max-expiry', '-m', dest="max_expiry", default=15768000, type=int, help="Maximum expiration time that can be set in seconds. Defaults to 15768000 (6 months)")
@@ -29,7 +30,7 @@ if args.ignore_ssl:
     urllib3.disable_warnings()
 
 # Read configuration file
-with open('config.json','r') as configfile:
+with open(args.config,'r') as configfile:
     config = json.load(configfile)
 
 snapmirror_labels = config['labels-policies'].keys()
