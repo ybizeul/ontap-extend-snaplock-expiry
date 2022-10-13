@@ -45,7 +45,7 @@ for system in config["systems"]:
         # Handle SSL exception
         if args.check:
             compliance="error"
-            print('%s = %s' % (system["ip"],compliance))
+            print(compliance)
             continue
         print("Certificate verification failed for %s. Use -k or add appropriate CA to system configuration" % system["ip"])
         continue
@@ -53,7 +53,7 @@ for system in config["systems"]:
         # Handle other connection errors
         if args.check:
             compliance="error"
-            print('%s = %s' % (system["ip"],compliance))
+            print(compliance)
             continue
         print("Unable to connect to %s" % system["ip"])
         print(e)
@@ -63,7 +63,7 @@ for system in config["systems"]:
     if r.status_code != 200:
         if args.check:
             compliance="error"
-            print('%s = %s' % (system["ip"],compliance))
+            print(compliance)
             continue
 
         print("Failed to connect to %s" % system["ip"])
@@ -156,4 +156,4 @@ for system in config["systems"]:
                     else:
                         print("Would update expiry-time from %s to %s on snapshot %s for volume %s on svm %s on %s" % (snapshot_create_time,snaplock_expiry_time,snapshot_name,snapshot_volume,snapshot_svm,system["ip"]))
     if args.check:
-        print('%s = %s' % (system["ip"],compliance))
+        print(compliance)
