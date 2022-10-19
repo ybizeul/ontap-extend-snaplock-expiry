@@ -76,3 +76,10 @@ NET-SNMP-EXTEND-MIB::nsExtendOutLine."ontap-snaplock".1 = STRING: cluster1.lab.t
 NET-SNMP-EXTEND-MIB::nsExtendOutLine."ontap-snaplock".2 = STRING: cluster2.lab.tynsoe.org = error
 NET-SNMP-EXTEND-MIB::nsExtendOutLine."ontap-snaplock".3 = STRING: cluster3.lab.tynsoe.org = non-compliant
 ```
+
+## Network Requirements
+
+|Source|Destination|Port|Description|
+|------|-----------|----|-----------|
+| Linux VM | ONTAP Management Interface | TCP/443 | ONTAP API communication |
+| Monitoring server | Linux VM | UDP/161 | SNMP monitoring |
