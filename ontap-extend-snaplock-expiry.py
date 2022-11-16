@@ -136,6 +136,7 @@ for system in config["systems"]:
                         compliance="non-compliant"
                         break
                     continue
+                
                 # Convert date back to ONTAP format
                 standard_snaplock_expiry_time=datetime.datetime.strftime(snaplock_expiry_time_obj,'%Y-%m-%dT%H:%M:%S%z')
                 snaplock_expiry_time = standard_to_ontap(standard_snaplock_expiry_time)
