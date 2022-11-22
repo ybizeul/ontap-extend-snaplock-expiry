@@ -6,7 +6,7 @@ When using Snapvault to backup data to a Snaplock aggregate, there is no option 
 
 This can cause a problem with mixed retention times, like keeping 30 daily snapshots, and 14 weekly snapshots : we should set the volume default snaplock expiration to 14 weeks, but in this case, all the daily snapshots within the 14 weeks retention for the weeklies will be retained and eat up additional space.
 
-Depending on the change rate, this can cause a significant storage consumption.
+Depending on the change rate, this can cause a significant storage over consumption.
 
 ```
 usage: ontap-extend-snaplock-expiry.py [-h] [--version] [--config CONFIG] [--simulate] [--check] [--max-expiry MAX_EXPIRY] [-k]
