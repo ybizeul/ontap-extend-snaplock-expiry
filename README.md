@@ -54,7 +54,7 @@ Set `insecure-ssl` to true if using self signed certificate for HTTPS.
 
 Configuration of the amount of time to lock a given snapshot is configured in `labels-policies`.
 
-This is a key/value dictionary with the snapmirror label as a key, and an expiration time for the corresponding snapshots in seconds.
+This is a key/value dictionary with the snapmirror label as a key, and an expiration time expressed in seconds for the corresponding snapshots.
 
 In the example above, any snapshots with the `slc_5min` snapmirror label will have their snaplock expiration time set to `create_time + 3600s`
 
