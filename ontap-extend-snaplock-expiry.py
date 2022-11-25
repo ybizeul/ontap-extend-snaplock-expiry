@@ -1,4 +1,4 @@
-#! /usr/bin/env python3
+#!/usr/bin/python
 
 import json
 import requests
@@ -18,6 +18,7 @@ parser.add_argument('--simulate', '-s', dest="simulate", action="store_true", de
 parser.add_argument('--check', '-c', dest="check", action="store_true", default=False, help="Check current Snaplock expiry and return compliant/non-compliant/error for each system")
 parser.add_argument('--max-expiry', '-m', dest="max_expiry", default=15768000, type=int, help="Maximum expiration time that can be set in seconds. Defaults to 15768000 (6 months)")
 parser.add_argument('-k', dest="ignore_ssl", action="store_true", default=False, help="Ignore SSL errors")
+parser.add_argument('--debug', '-d', dest="debug", action="store_true", default=False, help="Run in debug mode")
 
 args = parser.parse_args()
 
