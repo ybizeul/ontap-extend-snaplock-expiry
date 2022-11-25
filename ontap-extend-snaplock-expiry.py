@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import logging
+import sys
 import json
 import requests
 import datetime
@@ -23,11 +24,16 @@ parser.add_argument('--debug', '-d', dest="debug", action="store_true", default=
 
 args = parser.parse_args()
 
+# Helper method to remove password from logs
 def _protect(d):
     e = d.copy()
     if "password" in e:
         e['password'] = "<REDACTED>"
     return e
+
+# Helper method to print to STDERR
+def eprint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
 
 # Enable debug
 if args.debug:
@@ -35,7 +41,7 @@ if args.debug:
 
 # Notify if we're running in simulate mode
 if args.simulate:
-    print("Running in simulate mode")
+    eprint("Running in simulate mode")
 
 # If -k is used, ignore SSL warnings
 if args.ignore_ssl:
@@ -67,7 +73,7 @@ for system in config["systems"]:
             compliance="error"
             print(compliance)
             continue
-        print("Certificate verification failed for %s. Use -k or add appropriate CA to system configuration" % system["ip"])
+        eprint("Certificate verification failed for %s. Use -k or add appropriate CA to system configuration" % system["ip"])
         continue
     except requests.exceptions.ConnectionError as e:
         # Handle other connection errors
@@ -75,8 +81,8 @@ for system in config["systems"]:
             compliance="error"
             print(compliance)
             continue
-        print("Unable to connect to %s" % system["ip"])
-        print(e)
+        eprint("Unable to connect to %s" % system["ip"])
+        eprint(e)
         continue
 
     # Bail if for some reason we don't get code 200
@@ -86,7 +92,7 @@ for system in config["systems"]:
             print(compliance)
             continue
 
-        print("Failed to connect to %s" % system["ip"])
+        eprint("Failed to connect to %s" % system["ip"])
 
     volumes = r.json()
     logging.debug("Volumes : %s" % json.dumps(volumes))
@@ -127,7 +133,7 @@ for system in config["systems"]:
                 compliance="error"
                 if args.check:
                     break
-                print("Failed to get snapshot %s for volume %s on %s" % (snapshot_uuid,volume_uuid,system["ip"]))
+                eprint("Failed to get snapshot %s for volume %s on %s" % (snapshot_uuid,volume_uuid,system["ip"]))
             
             snapshot_details = t.json()
             logging.debug("Snapshot details : %s",json.dumps(snapshot_details))
@@ -188,14 +194,14 @@ for system in config["systems"]:
                     if args.simulate==False:
                         u = requests.post('https://%s/api/private/cli/snapshot/modify-snaplock-expiry-time' % (system["ip"]), json=data, auth=auth, verify=not args.ignore_ssl)
                         if u.status_code != 200:
-                            print(u.json()['error']['message'])
+                            eprint(u.json()['error']['message'])
                             raise Exception()
                 except Exception as e:
-                    print("Failed to update expiry-time %s on snapshot %s for volume %s on svm %s on %s" % (snaplock_expiry_time,snapshot_name,snapshot_volume,snapshot_svm,system["ip"]))
+                    eprint("Failed to update expiry-time %s on snapshot %s for volume %s on svm %s on %s" % (snaplock_expiry_time,snapshot_name,snapshot_volume,snapshot_svm,system["ip"]))
                 else:
                     if args.simulate == False:
-                        print("Updated expiry-time from %s to %s on snapshot %s for volume %s on svm %s on %s" % (snapshot_create_time,snaplock_expiry_time,snapshot_name,snapshot_volume,snapshot_svm,system["ip"]))
+                        eprint("Updated expiry-time from %s to %s on snapshot %s for volume %s on svm %s on %s" % (snapshot_create_time,snaplock_expiry_time,snapshot_name,snapshot_volume,snapshot_svm,system["ip"]))
                     else:
-                        print("Would update expiry-time from %s to %s on snapshot %s for volume %s on svm %s on %s" % (snapshot_create_time,snaplock_expiry_time,snapshot_name,snapshot_volume,snapshot_svm,system["ip"]))
+                        eprint("Would update expiry-time from %s to %s on snapshot %s for volume %s on svm %s on %s" % (snapshot_create_time,snaplock_expiry_time,snapshot_name,snapshot_volume,snapshot_svm,system["ip"]))
     if args.check:
         print(compliance)
