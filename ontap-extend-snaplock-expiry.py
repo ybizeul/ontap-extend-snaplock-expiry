@@ -123,7 +123,7 @@ for system in config["systems"]:
                 # Convert create time to standard object
                 # ONTAP dates are *almost* standard, it seems it uses [+/-]HH:MM instead of [+/-]HHMM for timezone specification
                 standard_snapshot_create_time = ontap_to_standard(snapshot_create_time)
-                snapshot_create_time_obj = datetime.datetime.strptime(standard_snapshot_create_time, '%Y-%m-%dT%H:%M:%S%z')
+                snapshot_create_time_obj = datetime.datetime.strptime(standard_snapshot_create_time, '%Y-%m-%dT%H:%M:%S')
 
                 # Add the desired amount of seconds to create_time to determine snaplock_expiry_time
                 seconds=config['labels-policies'][snapshot_snapmirror_label]
@@ -134,14 +134,14 @@ for system in config["systems"]:
                 # If in check mode, just compare  and continue
                 if args.check:
                     current_snaplock_expiry_time = ontap_to_standard(snapshot_snaplock_expiry_time)
-                    current_snaplock_expiry_time_obj = datetime.datetime.strptime(current_snaplock_expiry_time, '%Y-%m-%dT%H:%M:%S%z')
+                    current_snaplock_expiry_time_obj = datetime.datetime.strptime(current_snaplock_expiry_time, '%Y-%m-%dT%H:%M:%S')
                     if current_snaplock_expiry_time_obj < snaplock_expiry_time_obj:
                         compliance="non-compliant"
                         break
                     continue
                 
                 # Convert date back to ONTAP format
-                standard_snaplock_expiry_time=datetime.datetime.strftime(snaplock_expiry_time_obj,'%Y-%m-%dT%H:%M:%S%z')
+                standard_snaplock_expiry_time=datetime.datetime.strftime(snaplock_expiry_time_obj,'%Y-%m-%dT%H:%M:%S')
                 snaplock_expiry_time = standard_to_ontap(standard_snaplock_expiry_time)
 
                 # Extend Snaplock expiry time on snapshot
