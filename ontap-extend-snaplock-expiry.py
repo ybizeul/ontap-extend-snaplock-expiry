@@ -41,6 +41,7 @@ if args.simulate:
 if args.ignore_ssl:
     logging.debug("Disabling SSL warnings")
     urllib3.disable_warnings()
+    logging.captureWarnings(True)
 
 # Read configuration file
 with open(args.config,'r') as configfile:
