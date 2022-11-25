@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import logging
 import json
 import requests
 import datetime
@@ -22,26 +23,43 @@ parser.add_argument('--debug', '-d', dest="debug", action="store_true", default=
 
 args = parser.parse_args()
 
+def _protect(d):
+    e = d.copy()
+    if "password" in e:
+        e['password'] = "<REDACTED>"
+    return e
+
+# Enable debug
+if args.debug:
+    logging.basicConfig(level=logging.DEBUG)
+
 # Notify if we're running in simulate mode
 if args.simulate:
     print("Running in simulate mode")
 
 # If -k is used, ignore SSL warnings
 if args.ignore_ssl:
+    logging.debug("Disabling SSL warnings")
     urllib3.disable_warnings()
 
 # Read configuration file
 with open(args.config,'r') as configfile:
+    logging.debug("Opening Configuration file %s" % args.config)
     config = json.load(configfile)
 
 snapmirror_labels = config['labels-policies'].keys()
+logging.debug("Snapmirror labels are {}".format(", ".join(snapmirror_labels)))
 
 # Start connecting to configured systems
 for system in config["systems"]:
+    logging.debug("Checking system '%s'" % json.dumps(_protect(system)))
+
     compliance="compliant"
     auth = (system["username"],system["password"])
     try:
-        r = requests.get('https://%s/api/storage/volumes?snaplock.type=compliance' % system["ip"], auth=auth, verify=not args.ignore_ssl)
+        url = 'https://%s/api/storage/volumes?snaplock.type=compliance' % system["ip"]
+        logging.debug("API CALL : %s",url)
+        r = requests.get(url, auth=auth, verify=not args.ignore_ssl)
     except requests.exceptions.SSLError:
         # Handle SSL exception
         if args.check:
@@ -70,15 +88,19 @@ for system in config["systems"]:
         print("Failed to connect to %s" % system["ip"])
 
     volumes = r.json()
-
+    logging.debug("Volumes : %s" % json.dumps(volumes))
     # Check all volumes in the systems for snaplock snapshots
     for volume in volumes['records']:
+        logging.debug("Checking volume : %s" % json.dumps(volume))
         if compliance!="compliant":
             break            
         volume_uuid = volume['uuid']
 
         # Get all snapshots
-        s = requests.get('https://%s/api/storage/volumes/%s/snapshots' % (system["ip"],volume_uuid), auth=auth, verify=not args.ignore_ssl)
+        url = 'https://%s/api/storage/volumes/%s/snapshots' % (system["ip"],volume_uuid)
+        logging.debug("API CALL : %s",url)
+
+        s = requests.get(url, auth=auth, verify=not args.ignore_ssl)
         if s.status_code != 200:
             compliance="error"
             if args.check:
@@ -86,13 +108,19 @@ for system in config["systems"]:
             exit("Failed to get snapshots for volume %s on %s" % (volume_uuid,system["ip"]))
         
         snapshots = s.json()
+        logging.debug("Snapshots : %s" % json.dumps(snapshots))
 
         # Check all snapshots in the volume
         for snapshot in snapshots['records']:
+            logging.debug("Checking snapshot : %s" % json.dumps(snapshot))
+
             snapshot_uuid = snapshot['uuid']
 
             # Get snapshot details
-            t = requests.get('https://%s/api/storage/volumes/%s/snapshots/%s' % (system["ip"],volume_uuid,snapshot_uuid), auth=auth, verify=not args.ignore_ssl)
+            url = 'https://%s/api/storage/volumes/%s/snapshots/%s' % (system["ip"],volume_uuid,snapshot_uuid)
+            logging.debug("API CALL : %s",url)
+
+            t = requests.get(url, auth=auth, verify=not args.ignore_ssl)
             
             if t.status_code != 200:
                 compliance="error"
@@ -101,6 +129,7 @@ for system in config["systems"]:
                 print("Failed to get snapshot %s for volume %s on %s" % (snapshot_uuid,volume_uuid,system["ip"]))
             
             snapshot_details = t.json()
+            logging.debug("Snapshot details : %s",json.dumps(snapshot_details))
 
             snapshot_name = snapshot_details['name']
             snapshot_svm = snapshot_details['svm']['name']
@@ -123,7 +152,7 @@ for system in config["systems"]:
 
             # Check if there is a snaplock expiry time and the snapmirror labl is in the configuration
             if snapshot_snapmirror_label in snapmirror_labels and snapshot_snaplock_expiry_time:
-            
+                logging.debug("Found matching label '%s'" % snapshot_snapmirror_label)
                 # Convert create time to standard object
                 # ONTAP dates are *almost* standard, it seems it uses [+/-]HH:MM instead of [+/-]HHMM for timezone specification
                 standard_snapshot_create_time = ontap_to_standard(snapshot_create_time)
@@ -133,6 +162,7 @@ for system in config["systems"]:
                 # Add the desired amount of seconds to create_time to determine snaplock_expiry_time
                 seconds=config['labels-policies'][snapshot_snapmirror_label]
                 if seconds > args.max_expiry:
+                    logging.debug("Configured duration for label is greater than MAX_EXPIRY, ignoring")
                     break
                 snaplock_expiry_time_obj = snapshot_create_time_obj + datetime.timedelta(seconds=seconds)
 
