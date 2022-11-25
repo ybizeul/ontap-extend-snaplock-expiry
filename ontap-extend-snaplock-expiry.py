@@ -40,7 +40,7 @@ for system in config["systems"]:
     compliance="compliant"
     auth = (system["username"],system["password"])
     try:
-        r = requests.get('https://%s/api/storage/volumes' % system["ip"], auth=auth, verify=not args.ignore_ssl)
+        r = requests.get('https://%s/api/storage/volumes?snaplock.type=compliance' % system["ip"], auth=auth, verify=not args.ignore_ssl)
     except requests.exceptions.SSLError:
         # Handle SSL exception
         if args.check:
