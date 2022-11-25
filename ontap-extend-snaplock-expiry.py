@@ -110,12 +110,16 @@ for system in config["systems"]:
             snapshot_snaplock_expiry_time = 'snaplock_expiry_time' in snapshot_details and snapshot_details['snaplock_expiry_time'] or None
             
             # Helper functions
+            # For compatibility with Python 2.x missing %z in strptime, we are removing time zone data from the input.
+            # Dismissing the time zone in the returned date should not have an impact, as by default the current system
+            # time zone will be used.
+            # We are leaving Python 3 lines commented out for documentation purpose.
             def ontap_to_standard(date):
-                #return re.sub(r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}):(\d{2})',r'\1\2',date)
-                return re.sub(r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})([+-]\d{2}):(\d{2})',r'\1 \2\3',date).split(" ")[0]
+                return re.sub(r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})([+-]\d{2}):(\d{2})',r'\1',date)
+                #return re.sub(r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}):(\d{2})',r'\1\2',date) # Python 3
             def standard_to_ontap(date):
-                #return re.sub(r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2})(\d{2})',r'\1:\2',date)
-                return re.sub(r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})([+-]\d{2})(\d{2})',r'\1\2:\3',date)
+                return date
+                #return re.sub(r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2})(\d{2})',r'\1:\2',date) # Python 3
 
             # Check if there is a snaplock expiry time and the snapmirror labl is in the configuration
             if snapshot_snapmirror_label in snapmirror_labels and snapshot_snaplock_expiry_time:
@@ -124,6 +128,7 @@ for system in config["systems"]:
                 # ONTAP dates are *almost* standard, it seems it uses [+/-]HH:MM instead of [+/-]HHMM for timezone specification
                 standard_snapshot_create_time = ontap_to_standard(snapshot_create_time)
                 snapshot_create_time_obj = datetime.datetime.strptime(standard_snapshot_create_time, '%Y-%m-%dT%H:%M:%S')
+                #snapshot_create_time_obj = datetime.datetime.strptime(standard_snapshot_create_time, '%Y-%m-%dT%H:%M:%S%z') # Python 3
 
                 # Add the desired amount of seconds to create_time to determine snaplock_expiry_time
                 seconds=config['labels-policies'][snapshot_snapmirror_label]
@@ -135,6 +140,7 @@ for system in config["systems"]:
                 if args.check:
                     current_snaplock_expiry_time = ontap_to_standard(snapshot_snaplock_expiry_time)
                     current_snaplock_expiry_time_obj = datetime.datetime.strptime(current_snaplock_expiry_time, '%Y-%m-%dT%H:%M:%S')
+                    # current_snaplock_expiry_time_obj = datetime.datetime.strptime(current_snaplock_expiry_time, '%Y-%m-%dT%H:%M:%S%z') # Python 3
                     if current_snaplock_expiry_time_obj < snaplock_expiry_time_obj:
                         compliance="non-compliant"
                         break
@@ -142,6 +148,7 @@ for system in config["systems"]:
                 
                 # Convert date back to ONTAP format
                 standard_snaplock_expiry_time=datetime.datetime.strftime(snaplock_expiry_time_obj,'%Y-%m-%dT%H:%M:%S')
+                #standard_snaplock_expiry_time=datetime.datetime.strftime(snaplock_expiry_time_obj,'%Y-%m-%dT%H:%M:%S%z') # Python 3
                 snaplock_expiry_time = standard_to_ontap(standard_snaplock_expiry_time)
 
                 # Extend Snaplock expiry time on snapshot
