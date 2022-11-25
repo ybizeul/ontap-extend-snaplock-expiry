@@ -112,10 +112,10 @@ for system in config["systems"]:
             # Helper functions
             def ontap_to_standard(date):
                 #return re.sub(r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}):(\d{2})',r'\1\2',date)
-                return re.sub(r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})[+-]\d{2}:(\d{2})',r'\1\2',date)
+                return re.sub(r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})([+-]\d{2}):(\d{2})',r'\1 \2\3',date).split(" ")[0]
             def standard_to_ontap(date):
                 #return re.sub(r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2})(\d{2})',r'\1:\2',date)
-                return re.sub(r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})[+-]\d{2}(\d{2})',r'\1',date)
+                return re.sub(r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})([+-]\d{2})(\d{2})',r'\1\2:\3',date)
 
             # Check if there is a snaplock expiry time and the snapmirror labl is in the configuration
             if snapshot_snapmirror_label in snapmirror_labels and snapshot_snaplock_expiry_time:
