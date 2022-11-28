@@ -32,8 +32,8 @@ def _protect(d):
     return e
 
 # Helper method to print to STDERR
-def eprint(*args, **kwargs):
-    print(*args, file=sys.stderr, **kwargs)
+def eprint(s):
+    sys.stderr.write(s+"\n")
 
 # Enable debug
 if args.debug:
