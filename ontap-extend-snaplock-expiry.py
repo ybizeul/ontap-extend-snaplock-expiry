@@ -54,7 +54,7 @@ with open(args.config,'r') as configfile:
     config = json.load(configfile)
 
 snapmirror_labels = config['labels-policies'].keys()
-logging.debug("Snapmirror labels are {}".format(", ".join(snapmirror_labels)))
+logging.debug("Snapmirror labels are {0}".format(", ".join(snapmirror_labels)))
 
 # Start connecting to configured systems
 for system in config["systems"]:
