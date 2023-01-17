@@ -48,7 +48,7 @@ with open(args.config,'r') as configfile:
     config = json.load(configfile)
 
 snapmirror_labels = config['labels-policies'].keys()
-logging.debug("Snapmirror labels are {}".format(", ".join(snapmirror_labels)))
+logging.debug("Snapmirror labels are {0}".format(", ".join(snapmirror_labels)))
 
 ontapi_url = "/servlets/netapp.servlets.admin.XMLrequest_filer"
 ontapi_snapshots_list = """<?xml version="1.0" encoding="UTF-8"?>
