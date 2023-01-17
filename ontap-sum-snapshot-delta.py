@@ -128,7 +128,7 @@ for system in config["systems"]:
 
     logging.debug("Parsed Snapshots : {0}".format(snapshots))
 
-    print("{0}\t{1}\t{2}\t{3}".format("Vserver","Volume","Label","Size"))
+    print("{0}\t{1}\t{2}\t{3}".format("Vserver","Volume","Label","Count","Size"))
 
     for vserver in snapshots:
         logging.debug("Vserver: %s" % vserver)
@@ -155,5 +155,5 @@ for system in config["systems"]:
                     root = ET.fromstring(r.content)
                     size = size + int(root.find(".//{http://www.netapp.com/filer/admin}consumed-size").text)
 
-                print("{0}\t{1}\t{2}\t{3}".format(vserver,volume,label,size))
+                print("{0}\t{1}\t{2}\t{3}\t{4}".format(vserver,volume,label,l,size))
                 
