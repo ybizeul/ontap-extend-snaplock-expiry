@@ -62,7 +62,7 @@ ontapi_snapshots_list = """<?xml version="1.0" encoding="UTF-8"?>
         <vserver></vserver>
       </snapshot-info>
     </desired-attributes>
-    <max-records>4096</max-records>
+    <max-records>8192</max-records>
     <query>
       <snapshot-info>
         <snapmirror-label>{0}</snapmirror-label>
