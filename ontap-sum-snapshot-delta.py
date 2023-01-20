@@ -50,6 +50,7 @@ with open(args.config,'r') as configfile:
 snapmirror_labels = config['labels-policies'].keys()
 logging.debug("Snapmirror labels are {0}".format(", ".join(snapmirror_labels)))
 
+max_snapshots=8192
 ontapi_url = "/servlets/netapp.servlets.admin.XMLrequest_filer"
 ontapi_snapshots_list = """<?xml version="1.0" encoding="UTF-8"?>
 <netapp  xmlns="http://www.netapp.com/filer/admin" version="1.170">
@@ -62,10 +63,10 @@ ontapi_snapshots_list = """<?xml version="1.0" encoding="UTF-8"?>
         <vserver></vserver>
       </snapshot-info>
     </desired-attributes>
-    <max-records>8192</max-records>
+    <max-records>{max_snapshots}</max-records>
     <query>
       <snapshot-info>
-        <snapmirror-label>{0}</snapmirror-label>
+        <snapmirror-label>{snapmirror_label}</snapmirror-label>
       </snapshot-info>
     </query>
     <tag></tag>
@@ -93,10 +94,15 @@ for system in config["systems"]:
         url = 'https://%s%s' % (system["ip"],ontapi_url)
         logging.debug("API CALL : %s",url)
         for l in config["labels-policies"].keys():
-            data = ontapi_snapshots_list.format(l)
+            data = ontapi_snapshots_list.format(snapmirror_label=l,max_snapshots=max_snapshots)
             r = requests.post(url, data=data, auth=auth, verify=not args.ignore_ssl)
             logging.debug("Raw snapshots list: {0}".format(r.content))
             root = ET.fromstring(r.content)
+            count = int(root.find("{http://www.netapp.com/filer/admin}results/{http://www.netapp.com/filer/admin}num-records").text)
+
+            if count == max_snapshots:
+                logging.fatal("Missing snapshots, please increase max_snashots")
+
             for s in root.findall(".//{http://www.netapp.com/filer/admin}snapshot-info"):
                 volume = s.find("{http://www.netapp.com/filer/admin}volume").text
                 vserver = s.find("{http://www.netapp.com/filer/admin}vserver").text
@@ -108,6 +114,7 @@ for system in config["systems"]:
                 if l not in snapshots[vserver][volume]:
                     snapshots[vserver][volume][l] = []
                 snapshots[vserver][volume][l].append(name)
+
     except requests.exceptions.SSLError:
         # Handle SSL exception
         eprint("Certificate verification failed for %s. Use -k or add appropriate CA to system configuration" % system["ip"])
@@ -124,7 +131,7 @@ for system in config["systems"]:
 
     logging.debug("Parsed Snapshots : {0}".format(snapshots))
 
-    print("{0}\t{1}\t{2}\t{3}".format("Vserver","Volume","Label","Count","Size"))
+    print("{0}\t{1}\t{2}\t{3}\t{4}".format("Vserver","Volume","Label","Count","Size"))
 
     for vserver in snapshots:
         logging.debug("Vserver: %s" % vserver)
