@@ -110,10 +110,6 @@ for system in config["systems"]:
                 snapshots[vserver][volume][l].append(name)
     except requests.exceptions.SSLError:
         # Handle SSL exception
-        if args.check:
-            compliance="error"
-            print(compliance)
-            continue
         eprint("Certificate verification failed for %s. Use -k or add appropriate CA to system configuration" % system["ip"])
         continue
     except requests.exceptions.ConnectionError as e:
@@ -136,7 +132,7 @@ for system in config["systems"]:
             logging.debug("Volume: %s" % volume)
             for label in snapshots[vserver][volume]:
                 logging.debug("Label: %s" % label)
-                snap = snapshots[vserver][volume][label]
+                snap = sorted(snapshots[vserver][volume][label])
                 logging.debug("Snapshots: %s" % snap)
 
                 l = len(snap)
