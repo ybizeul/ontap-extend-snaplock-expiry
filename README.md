@@ -77,6 +77,23 @@ NET-SNMP-EXTEND-MIB::nsExtendOutLine."ontap-snaplock".2 = STRING: cluster2.lab.t
 NET-SNMP-EXTEND-MIB::nsExtendOutLine."ontap-snaplock".3 = STRING: cluster3.lab.tynsoe.org = non-compliant
 ```
 
+## Collect snapshot capacity per labels
+
+`ontap-sum-snapshot-delta.py` can be used to compile the cumulative capacity for every snapshot with a given snapmirror label.
+
+```
+usage: ontap-sum-snapshot-delta.py [-h] [--version] [--config CONFIG] [-k] [--debug]
+
+Get snapshot deltas for a given label
+
+options:
+  -h, --help       show this help message and exit
+  --version, -v    show program's version number and exit
+  --config CONFIG  Path to configuration file. Defaults to ./config.json
+  -k               Ignore SSL errors
+  --debug, -d      Run in debug mode
+```
+
 ## Network Requirements
 
 |Source|Destination|Port|Description|
