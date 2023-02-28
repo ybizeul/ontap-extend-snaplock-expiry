@@ -50,7 +50,7 @@ with open(args.config,'r') as configfile:
 snapmirror_labels = config['labels-policies'].keys()
 logging.debug("Snapmirror labels are {0}".format(", ".join(snapmirror_labels)))
 
-max_snapshots=8192
+max_snapshots=4096
 ontapi_url = "/servlets/netapp.servlets.admin.XMLrequest_filer"
 ontapi_snapshots_list = """<?xml version="1.0" encoding="UTF-8"?>
 <netapp  xmlns="http://www.netapp.com/filer/admin" version="1.170">
@@ -69,7 +69,7 @@ ontapi_snapshots_list = """<?xml version="1.0" encoding="UTF-8"?>
         <snapmirror-label>{snapmirror_label}</snapmirror-label>
       </snapshot-info>
     </query>
-    <tag></tag>
+    <tag>{tag}</tag>
   </snapshot-get-iter>
 </netapp>
 """
@@ -94,26 +94,35 @@ for system in config["systems"]:
         url = 'https://%s%s' % (system["ip"],ontapi_url)
         logging.debug("API CALL : %s",url)
         for l in config["labels-policies"].keys():
-            data = ontapi_snapshots_list.format(snapmirror_label=l,max_snapshots=max_snapshots)
-            r = requests.post(url, data=data, auth=auth, verify=not args.ignore_ssl)
-            logging.debug("Raw snapshots list: {0}".format(r.content))
-            root = ET.fromstring(r.content)
-            count = int(root.find("{http://www.netapp.com/filer/admin}results/{http://www.netapp.com/filer/admin}num-records").text)
+            tag=""
+            finished=False
+            while not finished:
+                data = ontapi_snapshots_list.format(snapmirror_label=l,max_snapshots=max_snapshots,tag=tag)
+                logging.debug("Raw query: {0}".format(data))
 
-            if count == max_snapshots:
-                logging.fatal("Missing snapshots, please increase max_snashots")
+                r = requests.post(url, data=data, auth=auth, verify=not args.ignore_ssl)
+                logging.debug("Raw snapshots list: {0}".format(r.content))
+                root = ET.fromstring(r.content)
+                count = int(root.find("{http://www.netapp.com/filer/admin}results/{http://www.netapp.com/filer/admin}num-records").text)
 
-            for s in root.findall(".//{http://www.netapp.com/filer/admin}snapshot-info"):
-                volume = s.find("{http://www.netapp.com/filer/admin}volume").text
-                vserver = s.find("{http://www.netapp.com/filer/admin}vserver").text
-                name = s.find("{http://www.netapp.com/filer/admin}name").text
-                if vserver not in snapshots:
-                    snapshots[vserver] = {}
-                if volume not in snapshots[vserver]:
-                    snapshots[vserver][volume] = {}
-                if l not in snapshots[vserver][volume]:
-                    snapshots[vserver][volume][l] = []
-                snapshots[vserver][volume][l].append(name)
+                for s in root.findall(".//{http://www.netapp.com/filer/admin}snapshot-info"):
+                    volume = s.find("{http://www.netapp.com/filer/admin}volume").text
+                    vserver = s.find("{http://www.netapp.com/filer/admin}vserver").text
+                    name = s.find("{http://www.netapp.com/filer/admin}name").text
+                    if vserver not in snapshots:
+                        snapshots[vserver] = {}
+                    if volume not in snapshots[vserver]:
+                        snapshots[vserver][volume] = {}
+                    if l not in snapshots[vserver][volume]:
+                        snapshots[vserver][volume][l] = []
+                    snapshots[vserver][volume][l].append(name)
+                tagElem = root.find("{http://www.netapp.com/filer/admin}results/{http://www.netapp.com/filer/admin}next-tag")
+
+                if tagElem != None:
+                    tag=tagElem.text.replace("<","&lt;").replace(">","&gt;")
+                    #print("tag: " + tag)
+                else:
+                    finished = True
 
     except requests.exceptions.SSLError:
         # Handle SSL exception
