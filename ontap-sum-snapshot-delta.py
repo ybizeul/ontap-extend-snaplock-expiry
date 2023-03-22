@@ -52,6 +52,15 @@ logging.debug("Snapmirror labels are {0}".format(", ".join(snapmirror_labels)))
 
 max_snapshots=4096
 ontapi_url = "/servlets/netapp.servlets.admin.XMLrequest_filer"
+
+# Using ONTAPI instead of REST as REST lacks the following features :
+# - Get a list of all the snapshots in the system having a particular 
+#   snapmirror-label.
+# - Get the snapshot delta between two snapshots
+#
+# It was easier to implement using a direct XML string than ask for the user to
+# install NMSDK
+
 ontapi_snapshots_list = """<?xml version="1.0" encoding="UTF-8"?>
 <netapp  xmlns="http://www.netapp.com/filer/admin" version="1.170">
   <snapshot-get-iter>
@@ -89,6 +98,34 @@ for system in config["systems"]:
     logging.debug("Checking system '%s'" % json.dumps(_protect(system)))
 
     auth = (system["username"],system["password"])
+    # snapshots variable will have the following structure :
+    # Once the structure is built, we iterate every snapshot to get the
+    # snap-diff between each
+    #
+    # { 
+    #   vserver1: { 
+    #     volume1: {
+    #       label1: [
+    #         snapshotA,
+    #         snapshotB
+    #       ],
+    #       label2: [
+    #         snapshotC,
+    #         snapshotD
+    #       ]
+    #     },
+    #     volume2: {
+    #       label1: [
+    #         snapshotE,
+    #         snapshotF
+    #       ],
+    #       label2: [
+    #         snapshotG,
+    #         snapshotH
+    #       ]
+    #     }
+    #   }
+    # }
     snapshots = {}
     try:
         url = 'https://%s%s' % (system["ip"],ontapi_url)
@@ -119,8 +156,9 @@ for system in config["systems"]:
                 tagElem = root.find("{http://www.netapp.com/filer/admin}results/{http://www.netapp.com/filer/admin}next-tag")
 
                 if tagElem != None:
+                    # Tag contains html entities to be replaced to be fed again
+                    # in the next request when paging results
                     tag=tagElem.text.replace("<","&lt;").replace(">","&gt;")
-                    #print("tag: " + tag)
                 else:
                     finished = True
 
