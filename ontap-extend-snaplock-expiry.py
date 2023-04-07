@@ -177,7 +177,6 @@ for system in config["systems"]:
                 current_snaplock_expiry_time = ontap_to_standard(snapshot_snaplock_expiry_time)
                 # current_snaplock_expiry_time_obj = datetime.datetime.strptime(current_snaplock_expiry_time, '%Y-%m-%dT%H:%M:%S%z') # Python 3
                 current_snaplock_expiry_time_obj = datetime.datetime.strptime(current_snaplock_expiry_time, '%Y-%m-%dT%H:%M:%S')
-                # current_snaplock_expiry_time_obj = datetime.datetime.strptime(current_snaplock_expiry_time, '%Y-%m-%dT%H:%M:%S%z') # Python 3
                 
                 if current_snaplock_expiry_time_obj < snaplock_expiry_time_obj:
                     if args.check:
