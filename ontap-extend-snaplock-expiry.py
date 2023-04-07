@@ -173,15 +173,16 @@ for system in config["systems"]:
                 snaplock_expiry_time_obj = snapshot_create_time_obj + datetime.timedelta(seconds=seconds)
 
                 # If in check mode, just compare  and continue
-                if args.check:
-                    current_snaplock_expiry_time = ontap_to_standard(snapshot_snaplock_expiry_time)
-                    current_snaplock_expiry_time_obj = datetime.datetime.strptime(current_snaplock_expiry_time, '%Y-%m-%dT%H:%M:%S')
+                current_snaplock_expiry_time = ontap_to_standard(snapshot_snaplock_expiry_time)
+                current_snaplock_expiry_time_obj = datetime.datetime.strptime(current_snaplock_expiry_time, '%Y-%m-%dT%H:%M:%S')
+                if current_snaplock_expiry_time_obj < snaplock_expiry_time_obj:
+                    if args.check:
                     # current_snaplock_expiry_time_obj = datetime.datetime.strptime(current_snaplock_expiry_time, '%Y-%m-%dT%H:%M:%S%z') # Python 3
-                    if current_snaplock_expiry_time_obj < snaplock_expiry_time_obj:
                         compliance="non-compliant"
                         break
+                else:
                     continue
-                
+                    
                 # Convert date back to ONTAP format
                 standard_snaplock_expiry_time=datetime.datetime.strftime(snaplock_expiry_time_obj,'%Y-%m-%dT%H:%M:%S')
                 #standard_snaplock_expiry_time=datetime.datetime.strftime(snaplock_expiry_time_obj,'%Y-%m-%dT%H:%M:%S%z') # Python 3
@@ -199,8 +200,8 @@ for system in config["systems"]:
                     eprint("Failed to update expiry-time %s on snapshot %s for volume %s on svm %s on %s" % (snaplock_expiry_time,snapshot_name,snapshot_volume,snapshot_svm,system["ip"]))
                 else:
                     if args.simulate == False:
-                        eprint("Updated expiry-time from %s to %s on snapshot %s for volume %s on svm %s on %s" % (snapshot_create_time,snaplock_expiry_time,snapshot_name,snapshot_volume,snapshot_svm,system["ip"]))
+                        eprint("Setting expiry-time from creation time %s to %s on snapshot %s for volume %s on svm %s on %s" % (snapshot_create_time,snaplock_expiry_time,snapshot_name,snapshot_volume,snapshot_svm,system["ip"]))
                     else:
-                        eprint("Would update expiry-time from %s to %s on snapshot %s for volume %s on svm %s on %s" % (snapshot_create_time,snaplock_expiry_time,snapshot_name,snapshot_volume,snapshot_svm,system["ip"]))
+                        eprint("Would set expiry-time from creation time %s to %s on snapshot %s for volume %s on svm %s on %s" % (snapshot_create_time,snaplock_expiry_time,snapshot_name,snapshot_volume,snapshot_svm,system["ip"]))
     if args.check:
         print(compliance)
