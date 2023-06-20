@@ -11,7 +11,7 @@ import xml.etree.ElementTree as ET
 
 import urllib3
 
-version = "0.9.0"
+version = "0.9.1"
 
 # Arguments Parsing
 parser = argparse.ArgumentParser(description='Get snapshot deltas for a given label')
@@ -202,8 +202,13 @@ for system in config["systems"]:
                     <netapp version='1.170' xmlns='http://www.netapp.com/filer/admin'>
                     <results status="passed"><consumed-size>393216</consumed-size><elapsed-time>86400</elapsed-time></results></netapp>%
                     """
-                    root = ET.fromstring(r.content)
-                    size = size + int(root.find(".//{http://www.netapp.com/filer/admin}consumed-size").text)
+                    try:
+                        root = ET.fromstring(r.content)
+                        size = size + int(root.find(".//{http://www.netapp.com/filer/admin}consumed-size").text)
+                    except AttributeError:
+                        sys.stderr.write('Exception occurred while gettign snapshot size\n')
+                        sys.stderr.write('Root :\n')
+                        sys.stderr.write(r.content.decode("utf-8") )
 
                 print("{0}\t{1}\t{2}\t{3}\t{4}".format(vserver,volume,label,l,size))
                 
