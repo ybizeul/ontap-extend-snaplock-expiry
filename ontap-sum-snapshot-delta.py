@@ -176,7 +176,7 @@ for system in config["systems"]:
 
     logging.debug("Parsed Snapshots : {0}".format(snapshots))
 
-    print("{0}\t{1}\t{2}\t{3}\t{4}".format("Vserver","Volume","Label","Count","Size"))
+    print("{0}\t{1}\t{2}\t{3}\t{4}\t{5}".format("System","Vserver","Volume","Label","Count","Size"))
 
     for vserver in snapshots:
         logging.debug("Vserver: %s" % vserver)
@@ -208,5 +208,5 @@ for system in config["systems"]:
                         sys.stderr.write('Root :\n')
                         sys.stderr.write(r.content.decode("utf-8") )
 
-                print("{0}\t{1}\t{2}\t{3}\t{4}".format(vserver,volume,label,l,size))
+                print("{0}\t{1}\t{2}\t{3}\t{4}\t{5}".format(system['ip'],vserver,volume,label,l,size))
                 
