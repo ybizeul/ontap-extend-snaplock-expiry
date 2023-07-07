@@ -11,7 +11,7 @@ import xml.etree.ElementTree as ET
 
 import urllib3
 
-version = "0.9.1"
+version = "0.9.2"
 
 # Arguments Parsing
 parser = argparse.ArgumentParser(description='Get snapshot deltas for a given label')
@@ -50,7 +50,6 @@ with open(args.config,'r') as configfile:
 snapmirror_labels = config['labels-policies'].keys()
 logging.debug("Snapmirror labels are {0}".format(", ".join(snapmirror_labels)))
 
-max_snapshots=4096
 ontapi_url = "/servlets/netapp.servlets.admin.XMLrequest_filer"
 
 # Using ONTAPI instead of REST as REST lacks the following features :
@@ -72,7 +71,6 @@ ontapi_snapshots_list = """<?xml version="1.0" encoding="UTF-8"?>
         <vserver></vserver>
       </snapshot-info>
     </desired-attributes>
-    <max-records>{max_snapshots}</max-records>
     <query>
       <snapshot-info>
         <snapmirror-label>{snapmirror_label}</snapmirror-label>
@@ -134,7 +132,7 @@ for system in config["systems"]:
             tag=""
             finished=False
             while not finished:
-                data = ontapi_snapshots_list.format(snapmirror_label=l,max_snapshots=max_snapshots,tag=tag)
+                data = ontapi_snapshots_list.format(snapmirror_label=l,tag=tag)
                 logging.debug("Raw query: {0}".format(data))
 
                 r = requests.post(url, data=data, auth=auth, verify=not args.ignore_ssl)
