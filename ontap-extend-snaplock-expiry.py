@@ -103,107 +103,108 @@ for system in config["systems"]:
         volume_uuid = volume['uuid']
 
         # Get all snapshots
-        url = 'https://%s/api/storage/volumes/%s/snapshots' % (system["ip"],volume_uuid)
-        logging.debug("API CALL : %s",url)
-
-        s = requests.get(url, auth=auth, verify=not args.ignore_ssl)
-        if s.status_code != 200:
-            compliance="error"
-            if args.check:
-                break
-            exit("Failed to get snapshots for volume %s on %s" % (volume_uuid,system["ip"]))
-        
-        snapshots = s.json()
-        logging.debug("Snapshots : %s" % json.dumps(snapshots))
-
-        # Check all snapshots in the volume
-        for snapshot in snapshots['records']:
-            logging.debug("Checking snapshot : %s" % json.dumps(snapshot))
-
-            snapshot_uuid = snapshot['uuid']
-
-            # Get snapshot details
-            url = 'https://%s/api/storage/volumes/%s/snapshots/%s' % (system["ip"],volume_uuid,snapshot_uuid)
+        for label in snapmirror_labels:
+            url = 'https://%s/api/storage/volumes/%s/snapshots?snapmirror_label=%s' % (system["ip"],volume_uuid,label)
             logging.debug("API CALL : %s",url)
 
-            t = requests.get(url, auth=auth, verify=not args.ignore_ssl)
-            
-            if t.status_code != 200:
+            s = requests.get(url, auth=auth, verify=not args.ignore_ssl)
+            if s.status_code != 200:
                 compliance="error"
                 if args.check:
                     break
-                eprint("Failed to get snapshot %s for volume %s on %s" % (snapshot_uuid,volume_uuid,system["ip"]))
+                exit("Failed to get snapshots for volume %s on %s" % (volume_uuid,system["ip"]))
             
-            snapshot_details = t.json()
-            logging.debug("Snapshot details : %s",json.dumps(snapshot_details))
+            snapshots = s.json()
+            logging.debug("Snapshots : %s" % json.dumps(snapshots))
 
-            snapshot_name = snapshot_details['name']
-            snapshot_svm = snapshot_details['svm']['name']
-            snapshot_volume = snapshot_details['volume']['name']
-            snapshot_create_time = snapshot_details['create_time']
-            snapshot_snapmirror_label = 'snapmirror_label' in snapshot_details and snapshot_details['snapmirror_label'] or None
-            snapshot_snaplock_expiry_time = 'snaplock_expiry_time' in snapshot_details and snapshot_details['snaplock_expiry_time'] or None
-            
-            # Helper functions
-            # For compatibility with Python 2.x missing %z in strptime, we are removing time zone data from the input.
-            # Dismissing the time zone in the returned date should not have an impact, as by default the current system
-            # time zone will be used.
-            # We are leaving Python 3 lines commented out for documentation purpose.
-            def ontap_to_standard(date):
-                return re.sub(r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})([+-]\d{2}):(\d{2})',r'\1',date)
-                #return re.sub(r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}):(\d{2})',r'\1\2',date) # Python 3
-            def standard_to_ontap(date):
-                return date
-                #return re.sub(r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2})(\d{2})',r'\1:\2',date) # Python 3
+            # Check all snapshots in the volume
+            for snapshot in snapshots['records']:
+                logging.debug("Checking snapshot : %s" % json.dumps(snapshot))
 
-            # Check if there is a snaplock expiry time and the snapmirror labl is in the configuration
-            if snapshot_snapmirror_label in snapmirror_labels and snapshot_snaplock_expiry_time:
-                logging.debug("Found matching label '%s'" % snapshot_snapmirror_label)
-                # Convert create time to standard object
-                # ONTAP dates are *almost* standard, it seems it uses [+/-]HH:MM instead of [+/-]HHMM for timezone specification
-                standard_snapshot_create_time = ontap_to_standard(snapshot_create_time)
-                snapshot_create_time_obj = datetime.datetime.strptime(standard_snapshot_create_time, '%Y-%m-%dT%H:%M:%S')
-                #snapshot_create_time_obj = datetime.datetime.strptime(standard_snapshot_create_time, '%Y-%m-%dT%H:%M:%S%z') # Python 3
+                snapshot_uuid = snapshot['uuid']
 
-                # Add the desired amount of seconds to create_time to determine snaplock_expiry_time
-                seconds=config['labels-policies'][snapshot_snapmirror_label]
-                if seconds > args.max_expiry:
-                    logging.debug("Configured duration for label is greater than MAX_EXPIRY, ignoring")
-                    break
-                snaplock_expiry_time_obj = snapshot_create_time_obj + datetime.timedelta(seconds=seconds)
+                # Get snapshot details
+                url = 'https://%s/api/storage/volumes/%s/snapshots/%s' % (system["ip"],volume_uuid,snapshot_uuid)
+                logging.debug("API CALL : %s",url)
 
-                # If in check mode, just compare  and continue
+                t = requests.get(url, auth=auth, verify=not args.ignore_ssl)
                 
-                current_snaplock_expiry_time = ontap_to_standard(snapshot_snaplock_expiry_time)
-                current_snaplock_expiry_time_obj = datetime.datetime.strptime(current_snaplock_expiry_time, '%Y-%m-%dT%H:%M:%S')
-                # current_snaplock_expiry_time_obj = datetime.datetime.strptime(current_snaplock_expiry_time, '%Y-%m-%dT%H:%M:%S%z') # Python 3
-                
-                if current_snaplock_expiry_time_obj < snaplock_expiry_time_obj:
+                if t.status_code != 200:
+                    compliance="error"
                     if args.check:
-                        compliance="non-compliant"
                         break
-                else:
-                    continue
-                    
-                # Convert date back to ONTAP format
-                standard_snaplock_expiry_time=datetime.datetime.strftime(snaplock_expiry_time_obj,'%Y-%m-%dT%H:%M:%S')
-                #standard_snaplock_expiry_time=datetime.datetime.strftime(snaplock_expiry_time_obj,'%Y-%m-%dT%H:%M:%S%z') # Python 3
-                snaplock_expiry_time = standard_to_ontap(standard_snaplock_expiry_time)
+                    eprint("Failed to get snapshot %s for volume %s on %s" % (snapshot_uuid,volume_uuid,system["ip"]))
+                
+                snapshot_details = t.json()
+                logging.debug("Snapshot details : %s",json.dumps(snapshot_details))
 
-                # Extend Snaplock expiry time on snapshot
-                data={'vserver':snapshot_svm,'volume':snapshot_volume,'snapshot':snapshot_name,'expiry-time':snaplock_expiry_time}
-                try:
-                    if args.simulate==False:
-                        u = requests.post('https://%s/api/private/cli/snapshot/modify-snaplock-expiry-time' % (system["ip"]), json=data, auth=auth, verify=not args.ignore_ssl)
-                        if u.status_code != 200:
-                            eprint(u.json()['error']['message'])
-                            raise Exception()
-                except Exception as e:
-                    eprint("Failed to update expiry-time %s on snapshot %s for volume %s on svm %s on %s" % (snaplock_expiry_time,snapshot_name,snapshot_volume,snapshot_svm,system["ip"]))
-                else:
-                    if args.simulate == False:
-                        eprint("Setting expiry-time from creation time %s to %s on snapshot %s for volume %s on svm %s on %s" % (snapshot_create_time,snaplock_expiry_time,snapshot_name,snapshot_volume,snapshot_svm,system["ip"]))
+                snapshot_name = snapshot_details['name']
+                snapshot_svm = snapshot_details['svm']['name']
+                snapshot_volume = snapshot_details['volume']['name']
+                snapshot_create_time = snapshot_details['create_time']
+                snapshot_snapmirror_label = 'snapmirror_label' in snapshot_details and snapshot_details['snapmirror_label'] or None
+                snapshot_snaplock_expiry_time = 'snaplock_expiry_time' in snapshot_details and snapshot_details['snaplock_expiry_time'] or None
+                
+                # Helper functions
+                # For compatibility with Python 2.x missing %z in strptime, we are removing time zone data from the input.
+                # Dismissing the time zone in the returned date should not have an impact, as by default the current system
+                # time zone will be used.
+                # We are leaving Python 3 lines commented out for documentation purpose.
+                def ontap_to_standard(date):
+                    return re.sub(r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})([+-]\d{2}):(\d{2})',r'\1',date)
+                    #return re.sub(r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}):(\d{2})',r'\1\2',date) # Python 3
+                def standard_to_ontap(date):
+                    return date
+                    #return re.sub(r'(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2})(\d{2})',r'\1:\2',date) # Python 3
+
+                # Check if there is a snaplock expiry time and the snapmirror labl is in the configuration
+                if snapshot_snapmirror_label in snapmirror_labels and snapshot_snaplock_expiry_time:
+                    logging.debug("Found matching label '%s'" % snapshot_snapmirror_label)
+                    # Convert create time to standard object
+                    # ONTAP dates are *almost* standard, it seems it uses [+/-]HH:MM instead of [+/-]HHMM for timezone specification
+                    standard_snapshot_create_time = ontap_to_standard(snapshot_create_time)
+                    snapshot_create_time_obj = datetime.datetime.strptime(standard_snapshot_create_time, '%Y-%m-%dT%H:%M:%S')
+                    #snapshot_create_time_obj = datetime.datetime.strptime(standard_snapshot_create_time, '%Y-%m-%dT%H:%M:%S%z') # Python 3
+
+                    # Add the desired amount of seconds to create_time to determine snaplock_expiry_time
+                    seconds=config['labels-policies'][snapshot_snapmirror_label]
+                    if seconds > args.max_expiry:
+                        logging.debug("Configured duration for label is greater than MAX_EXPIRY, ignoring")
+                        break
+                    snaplock_expiry_time_obj = snapshot_create_time_obj + datetime.timedelta(seconds=seconds)
+
+                    # If in check mode, just compare  and continue
+                    
+                    current_snaplock_expiry_time = ontap_to_standard(snapshot_snaplock_expiry_time)
+                    current_snaplock_expiry_time_obj = datetime.datetime.strptime(current_snaplock_expiry_time, '%Y-%m-%dT%H:%M:%S')
+                    # current_snaplock_expiry_time_obj = datetime.datetime.strptime(current_snaplock_expiry_time, '%Y-%m-%dT%H:%M:%S%z') # Python 3
+                    
+                    if current_snaplock_expiry_time_obj < snaplock_expiry_time_obj:
+                        if args.check:
+                            compliance="non-compliant"
+                            break
                     else:
-                        eprint("Would set expiry-time from creation time %s to %s on snapshot %s for volume %s on svm %s on %s" % (snapshot_create_time,snaplock_expiry_time,snapshot_name,snapshot_volume,snapshot_svm,system["ip"]))
+                        continue
+                        
+                    # Convert date back to ONTAP format
+                    standard_snaplock_expiry_time=datetime.datetime.strftime(snaplock_expiry_time_obj,'%Y-%m-%dT%H:%M:%S')
+                    #standard_snaplock_expiry_time=datetime.datetime.strftime(snaplock_expiry_time_obj,'%Y-%m-%dT%H:%M:%S%z') # Python 3
+                    snaplock_expiry_time = standard_to_ontap(standard_snaplock_expiry_time)
+
+                    # Extend Snaplock expiry time on snapshot
+                    data={'vserver':snapshot_svm,'volume':snapshot_volume,'snapshot':snapshot_name,'expiry-time':snaplock_expiry_time}
+                    try:
+                        if args.simulate==False:
+                            u = requests.post('https://%s/api/private/cli/snapshot/modify-snaplock-expiry-time' % (system["ip"]), json=data, auth=auth, verify=not args.ignore_ssl)
+                            if u.status_code != 200:
+                                eprint(u.json()['error']['message'])
+                                raise Exception()
+                    except Exception as e:
+                        eprint("Failed to update expiry-time %s on snapshot %s for volume %s on svm %s on %s" % (snaplock_expiry_time,snapshot_name,snapshot_volume,snapshot_svm,system["ip"]))
+                    else:
+                        if args.simulate == False:
+                            eprint("Setting expiry-time from creation time %s to %s on snapshot %s for volume %s on svm %s on %s" % (snapshot_create_time,snaplock_expiry_time,snapshot_name,snapshot_volume,snapshot_svm,system["ip"]))
+                        else:
+                            eprint("Would set expiry-time from creation time %s to %s on snapshot %s for volume %s on svm %s on %s" % (snapshot_create_time,snaplock_expiry_time,snapshot_name,snapshot_volume,snapshot_svm,system["ip"]))
     if args.check:
         print(compliance)
