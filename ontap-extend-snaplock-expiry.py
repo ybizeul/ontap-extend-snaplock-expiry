@@ -207,4 +207,4 @@ for system in config["systems"]:
                         else:
                             eprint("Would set expiry-time from creation time %s to %s on snapshot %s for volume %s on svm %s on %s" % (snapshot_create_time,snaplock_expiry_time,snapshot_name,snapshot_volume,snapshot_svm,system["ip"]))
     if args.check:
-        print(compliance)
+        print("%s\t%s" % (system["ip"],compliance))
