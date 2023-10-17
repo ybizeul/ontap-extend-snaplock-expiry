@@ -7,6 +7,7 @@ import requests
 import datetime
 import re
 import argparse
+import base64
 
 import urllib3
 
@@ -33,7 +34,7 @@ def _protect(d):
 
 # Helper method to print to STDERR
 def eprint(s):
-    sys.stderr.write(s+"\n")
+    sys.stderr.write(str(s)+"\n")
 
 # Enable debug
 if args.debug:
@@ -61,7 +62,11 @@ for system in config["systems"]:
     logging.debug("Checking system '%s'" % json.dumps(_protect(system)))
 
     compliance="compliant"
-    auth = (system["username"],system["password"])
+    if "password-base64" in system:
+        auth = (system["username"],base64.b64decode(system["password-base64"]))
+    else:
+        logging.warning("Password not base64-encoded in config file (%s)" % system["ip"])
+        auth = (system["username"],system["password"])
     try:
         url = 'https://%s/api/storage/volumes?snaplock.type=compliance' % system["ip"]
         logging.debug("API CALL : %s",url)
@@ -91,7 +96,8 @@ for system in config["systems"]:
             print(compliance)
             continue
 
-        eprint("Failed to connect to %s" % system["ip"])
+        eprint("Failed to connect to %s (Code %i : %s)" % (system["ip"],r.status_code,r.reason))
+        continue
 
     volumes = r.json()
     logging.debug("Volumes : %s" % json.dumps(volumes))

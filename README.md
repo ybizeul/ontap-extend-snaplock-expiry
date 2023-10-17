@@ -34,7 +34,7 @@ Example configuration file :
         {
             "ip":"cluster1.lab.tynsoe.org",
             "username":"admin",
-            "password":"Netapp01"
+            "password-base64": "TmV0YXBwMDE="
         },
         {
             "ip":"cluster2.lab.tynsoe.org",
