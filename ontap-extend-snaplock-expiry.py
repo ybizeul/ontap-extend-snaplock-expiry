@@ -11,7 +11,7 @@ import base64
 
 import urllib3
 
-version = "0.9.6"
+version = "0.9.7"
 
 # Arguments Parsing
 parser = argparse.ArgumentParser(description='Update Snaplock snapshot expiry time according to snapmirror labels')
@@ -208,6 +208,8 @@ for system in config["systems"]:
                     if args.simulate == False:
                         try:
                             u = requests.post('https://%s/api/private/cli/snapshot/modify-snaplock-expiry-time' % (system["ip"]), json=data, auth=auth, verify=not args.ignore_ssl)
+                            set_exp_out = u.json()
+                            logging.debug("Set Expiry Time Result : %s" % json.dumps(set_exp_out))
                             if u.status_code != 200:
                                 eprint(u.json()['error']['message'])
                                 raise Exception()
