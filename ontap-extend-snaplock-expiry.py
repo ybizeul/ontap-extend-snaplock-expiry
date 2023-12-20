@@ -62,6 +62,7 @@ for system in config["systems"]:
     logging.debug("Checking system '%s'" % json.dumps(_protect(system)))
 
     compliance="compliant"
+
     if "password-base64" in system:
         auth = (system["username"],base64.b64decode(system["password-base64"]))
     else:
@@ -104,7 +105,7 @@ for system in config["systems"]:
     # Check all volumes in the systems for snaplock snapshots
     for volume in volumes['records']:
         logging.debug("Checking volume : %s" % json.dumps(volume))
-        if compliance!="compliant":
+        if compliance != "compliant":
             break            
         volume_uuid = volume['uuid']
 
@@ -168,7 +169,10 @@ for system in config["systems"]:
                     logging.debug("Found matching label '%s'" % snapshot_snapmirror_label)
                     # Convert create time to standard object
                     # ONTAP dates are *almost* standard, it seems it uses [+/-]HH:MM instead of [+/-]HHMM for timezone specification
+                    logging.debug("ontap snapshot_create_time : %s" % snapshot_create_time)
                     standard_snapshot_create_time = ontap_to_standard(snapshot_create_time)
+                    logging.debug("standard_snapshot_create_time : %s" % standard_snapshot_create_time)
+
                     snapshot_create_time_obj = datetime.datetime.strptime(standard_snapshot_create_time, '%Y-%m-%dT%H:%M:%S')
                     #snapshot_create_time_obj = datetime.datetime.strptime(standard_snapshot_create_time, '%Y-%m-%dT%H:%M:%S%z') # Python 3
 
