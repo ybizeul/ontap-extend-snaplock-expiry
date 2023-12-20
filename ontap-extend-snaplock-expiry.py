@@ -207,6 +207,7 @@ for system in config["systems"]:
                     data={'vserver':snapshot_svm,'volume':snapshot_volume,'snapshot':snapshot_name,'expiry-time':snaplock_expiry_time}
                     if args.simulate == False:
                         try:
+                            logging.debug("Calling /api/private/cli/snapshot/modify-snaplock-expiry-time with data : %s",json.dumps(data))
                             u = requests.post('https://%s/api/private/cli/snapshot/modify-snaplock-expiry-time' % (system["ip"]), json=data, auth=auth, verify=not args.ignore_ssl)
                             set_exp_out = u.json()
                             logging.debug("Set Expiry Time Result : %s" % json.dumps(set_exp_out))
