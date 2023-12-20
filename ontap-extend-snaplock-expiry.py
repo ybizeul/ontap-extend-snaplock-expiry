@@ -11,7 +11,7 @@ import base64
 
 import urllib3
 
-version = "0.9.7"
+version = "0.9.8"
 
 # Arguments Parsing
 parser = argparse.ArgumentParser(description='Update Snaplock snapshot expiry time according to snapmirror labels')
