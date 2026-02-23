@@ -10,6 +10,11 @@
             "ip":"cluster3.lab.tynsoe.org",
             "username":"admin",
             "password":"Netapp01"
+        },
+        {
+            "ip":"cluster4.lab.tynsoe.org",
+            "certificate":"/path/to/client_cert.pem",
+            "key":"/path/to/client_key.pem"
         }
     ],
     "labels-policies":{

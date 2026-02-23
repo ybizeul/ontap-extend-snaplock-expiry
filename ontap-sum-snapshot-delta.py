@@ -7,6 +7,7 @@ import requests
 import datetime
 import re
 import argparse
+import base64
 import xml.etree.ElementTree as ET
 
 import urllib3
@@ -27,6 +28,8 @@ def _protect(d):
     e = d.copy()
     if "password" in e:
         e['password'] = "<REDACTED>"
+    if "key" in e:
+        e['key'] = "<REDACTED>"
     return e
     
 # Helper method to print to STDERR
@@ -95,7 +98,17 @@ ontapi_snapshots_delta="""<?xml version="1.0" encoding="UTF-8"?>
 for system in config["systems"]:
     logging.debug("Checking system '%s'" % json.dumps(_protect(system)))
 
-    auth = (system["username"],system["password"])
+    if "certificate" in system:
+        auth = None
+        cert = (system["certificate"], system["key"])
+        logging.debug("Using certificate-based authentication for %s" % system["ip"])
+    elif "password-base64" in system:
+        auth = (system["username"],base64.b64decode(system["password-base64"]))
+        cert = None
+    else:
+        logging.warning("Password not base64-encoded in config file (%s)" % system["ip"])
+        auth = (system["username"],system["password"])
+        cert = None
     # snapshots variable will have the following structure :
     # Once the structure is built, we iterate every snapshot to get the
     # snap-diff between each
@@ -135,7 +148,7 @@ for system in config["systems"]:
                 data = ontapi_snapshots_list.format(snapmirror_label=l,tag=tag)
                 logging.debug("Raw query: {0}".format(data))
 
-                r = requests.post(url, data=data, auth=auth, verify=not args.ignore_ssl)
+                r = requests.post(url, data=data, auth=auth, cert=cert, verify=not args.ignore_ssl)
                 logging.debug("Raw snapshots list: {0}".format(r.content))
                 root = ET.fromstring(r.content)
                 count = int(root.find("{http://www.netapp.com/filer/admin}results/{http://www.netapp.com/filer/admin}num-records").text)
@@ -193,7 +206,7 @@ for system in config["systems"]:
                 size=0
                 for i in range(l-1):
                     data = ontapi_snapshots_delta.format(vserver,snap[i],snap[i+1],volume)
-                    r = requests.post(url, data=data, auth=auth, verify=not args.ignore_ssl)
+                    r = requests.post(url, data=data, auth=auth, cert=cert, verify=not args.ignore_ssl)
                     """
                     <?xml version='1.0' encoding='UTF-8' ?>
                     <!DOCTYPE netapp SYSTEM 'file:/etc/netapp_gx.dtd'>
