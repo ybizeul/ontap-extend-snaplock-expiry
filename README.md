@@ -52,6 +52,29 @@ Example configuration file :
 
 Set `insecure-ssl` to true if using self signed certificate for HTTPS.
 
+### Certificate-based authentication
+
+Instead of using username/password, you can authenticate using client certificates (mutual TLS). Add `certificate` and `key` fields to a system entry, pointing to the PEM-encoded client certificate and private key files respectively. When present, these override `username`/`password`/`password-base64`.
+
+```
+{
+    "systems":[
+        {
+            "ip":"cluster1.lab.tynsoe.org",
+            "certificate":"/path/to/client_cert.pem",
+            "key":"/path/to/client_key.pem"
+        }
+    ],
+    "labels-policies":{
+        "daily": 86400
+    }
+}
+```
+
+The ONTAP cluster must be configured for certificate authentication. Refer to the ONTAP documentation for `security login create -authentication-method cert` and `security certificate install -type client-ca`.
+
+Note that the `-k` flag still controls server certificate verification independently of client certificate authentication.
+
 Configuration of the amount of time to lock a given snapshot is configured in `labels-policies`.
 
 This is a key/value dictionary with the snapmirror label as a key, and an expiration time expressed in seconds for the corresponding snapshots.

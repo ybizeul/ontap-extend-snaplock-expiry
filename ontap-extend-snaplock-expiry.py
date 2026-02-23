@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!python
 
 import logging
 import sys
@@ -30,6 +30,8 @@ def _protect(d):
     e = d.copy()
     if "password" in e:
         e['password'] = "<REDACTED>"
+    if "key" in e:
+        e['key'] = "<REDACTED>"
     return e
 
 # Helper method to print to STDERR
@@ -63,22 +65,29 @@ for system in config["systems"]:
 
     compliance="compliant"
 
-    if "password-base64" in system:
+    if "certificate" in system:
+        auth = None
+        cert = (system["certificate"], system["key"])
+        logging.debug("Using certificate-based authentication for %s" % system["ip"])
+    elif "password-base64" in system:
         auth = (system["username"],base64.b64decode(system["password-base64"]))
+        cert = None
     else:
         logging.warning("Password not base64-encoded in config file (%s)" % system["ip"])
         auth = (system["username"],system["password"])
+        cert = None
     try:
         url = 'https://%s/api/storage/volumes?snaplock.type=compliance' % system["ip"]
         logging.debug("API CALL : %s",url)
-        r = requests.get(url, auth=auth, verify=not args.ignore_ssl)
-    except requests.exceptions.SSLError:
+        r = requests.get(url, auth=auth, cert=cert, verify=not args.ignore_ssl)
+    except requests.exceptions.SSLError as e:
         # Handle SSL exception
         if args.check:
             compliance="error"
             print(compliance)
             continue
         eprint("Certificate verification failed for %s. Use -k or add appropriate CA to system configuration" % system["ip"])
+        eprint(e)
         continue
     except requests.exceptions.ConnectionError as e:
         # Handle other connection errors
@@ -114,7 +123,7 @@ for system in config["systems"]:
             url = 'https://%s/api/storage/volumes/%s/snapshots?snapmirror_label=%s' % (system["ip"],volume_uuid,label)
             logging.debug("API CALL : %s",url)
 
-            s = requests.get(url, auth=auth, verify=not args.ignore_ssl)
+            s = requests.get(url, auth=auth, cert=cert, verify=not args.ignore_ssl)
             if s.status_code != 200:
                 compliance="error"
                 if args.check:
@@ -134,7 +143,7 @@ for system in config["systems"]:
                 url = 'https://%s/api/storage/volumes/%s/snapshots/%s' % (system["ip"],volume_uuid,snapshot_uuid)
                 logging.debug("API CALL : %s",url)
 
-                t = requests.get(url, auth=auth, verify=not args.ignore_ssl)
+                t = requests.get(url, auth=auth, cert=cert, verify=not args.ignore_ssl)
                 
                 if t.status_code != 200:
                     compliance="error"
@@ -212,7 +221,7 @@ for system in config["systems"]:
                     if args.simulate == False:
                         try:
                             logging.debug("Calling /api/private/cli/snapshot/modify-snaplock-expiry-time with data : %s",json.dumps(data))
-                            u = requests.post('https://%s/api/private/cli/snapshot/modify-snaplock-expiry-time' % (system["ip"]), json=data, auth=auth, verify=not args.ignore_ssl)
+                            u = requests.post('https://%s/api/private/cli/snapshot/modify-snaplock-expiry-time' % (system["ip"]), json=data, auth=auth, cert=cert, verify=not args.ignore_ssl)
                             set_exp_out = u.json()
                             logging.debug("Set Expiry Time Result : %s" % json.dumps(set_exp_out))
                             if u.status_code != 200:
